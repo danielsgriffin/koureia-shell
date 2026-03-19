@@ -4,14 +4,7 @@ import { dayName, formatTime, formatPrice } from "@/lib/utils"
 type Props = { spec: SiteSpec }
 
 export function SiteRenderer({ spec }: Props) {
-  const { shop, branding, services, staff, hours, social, bookingUrl } = spec
-
-  // Group services by category
-  const servicesByCategory = services.reduce<Record<string, SiteService[]>>((acc, s) => {
-    const cat = s.category ?? "Services"
-    ;(acc[cat] ??= []).push(s)
-    return acc
-  }, {})
+  const { shop, branding, staff, hours, social, bookingUrl } = spec
 
   return (
     <div
@@ -28,12 +21,20 @@ export function SiteRenderer({ spec }: Props) {
         style={{ borderColor: `${branding.primaryColor}30` }}
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <span
-            className="text-xl font-semibold"
-            style={{ color: branding.primaryColor, fontFamily: `'${branding.displayFont}', serif` }}
-          >
-            {shop.name}
-          </span>
+          {branding.logoUrl ? (
+            <img
+              src={branding.logoUrl}
+              alt={shop.name}
+              className="h-10 w-auto"
+            />
+          ) : (
+            <span
+              className="text-xl font-semibold"
+              style={{ color: branding.primaryColor, fontFamily: `'${branding.displayFont}', serif` }}
+            >
+              {shop.name}
+            </span>
+          )}
           <a
             href={bookingUrl}
             className="rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
@@ -73,48 +74,10 @@ export function SiteRenderer({ spec }: Props) {
         </div>
       </section>
 
-      {/* Services */}
-      {services.length > 0 && (
-        <section
-          className="border-t px-6 py-16"
-          style={{ borderColor: `${branding.primaryColor}15` }}
-        >
-          <div className="mx-auto max-w-5xl">
-            <SectionHeading branding={branding}>Services</SectionHeading>
-            <div className="mt-10 space-y-10">
-              {Object.entries(servicesByCategory).map(([category, items]) => (
-                <div key={category}>
-                  <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider opacity-50">
-                    {category}
-                  </h3>
-                  <div className="space-y-1">
-                    {items.map((service) => (
-                      <ServiceRow key={service.name} service={service} branding={branding} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Staff */}
-      {staff.length > 0 && (
-        <section
-          className="border-t px-6 py-16"
-          style={{ borderColor: `${branding.primaryColor}15` }}
-        >
-          <div className="mx-auto max-w-5xl">
-            <SectionHeading branding={branding}>Our Team</SectionHeading>
-            <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {staff.map((member) => (
-                <StaffCard key={member.name} member={member} branding={branding} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Staff sections — each staff member with their services */}
+      {staff.map((member) => (
+        <StaffSection key={member.name} member={member} branding={branding} bookingUrl={bookingUrl} />
+      ))}
 
       {/* Hours + Contact */}
       <section
@@ -122,7 +85,6 @@ export function SiteRenderer({ spec }: Props) {
         style={{ borderColor: `${branding.primaryColor}15` }}
       >
         <div className="mx-auto grid max-w-5xl gap-12 md:grid-cols-2">
-          {/* Hours */}
           {hours.length > 0 && (
             <div>
               <SectionHeading branding={branding}>Hours</SectionHeading>
@@ -134,7 +96,6 @@ export function SiteRenderer({ spec }: Props) {
             </div>
           )}
 
-          {/* Contact */}
           <div>
             <SectionHeading branding={branding}>Contact</SectionHeading>
             <div className="mt-6 space-y-3 text-sm">
@@ -205,11 +166,120 @@ function SectionHeading({ children, branding }: { children: React.ReactNode } & 
   )
 }
 
-function ServiceRow({ service, branding }: { service: SiteService } & BrandingProp) {
+function StaffSection({
+  member,
+  branding,
+  bookingUrl,
+}: { member: SiteStaffMember; bookingUrl: string } & BrandingProp) {
+  const accentColor = member.colorHex ?? branding.primaryColor
+
+  // Group this staff member's services by category
+  const servicesByCategory = member.services.reduce<Record<string, SiteService[]>>((acc, s) => {
+    const cat = s.category ?? "Services"
+    ;(acc[cat] ??= []).push(s)
+    return acc
+  }, {})
+
+  const workingDays = member.hours.filter((h) => !h.isClosed)
+
+  return (
+    <section
+      className="border-t px-6 py-16"
+      style={{ borderColor: `${branding.primaryColor}15` }}
+    >
+      <div className="mx-auto max-w-5xl">
+        {/* Staff header */}
+        <div className="mb-10 flex items-start gap-5">
+          {member.imageUrl ? (
+            <img
+              src={member.imageUrl}
+              alt={member.name}
+              className="h-20 w-20 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-xl font-bold"
+              style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
+            >
+              {member.name
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)}
+            </div>
+          )}
+          <div>
+            <h2
+              className="text-2xl font-bold"
+              style={{ color: accentColor, fontFamily: `'${branding.displayFont}', serif` }}
+            >
+              {member.name}
+            </h2>
+            <p className="text-sm opacity-50">{member.role}</p>
+            {member.bio && (
+              <p className="mt-2 max-w-lg text-sm leading-relaxed opacity-60">{member.bio}</p>
+            )}
+            {member.specialties.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {member.specialties.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full px-2.5 py-0.5 text-xs"
+                    style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+            {workingDays.length > 0 && (
+              <p className="mt-3 text-xs opacity-40">
+                {workingDays.map((h) => dayName(h.dayOfWeek).slice(0, 3)).join(" · ")}
+                {" · "}
+                {formatTime(workingDays[0].startTime)}–{formatTime(workingDays[0].endTime)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Services for this staff member */}
+        {member.services.length > 0 && (
+          <div className="space-y-8">
+            {Object.entries(servicesByCategory).map(([category, items]) => (
+              <div key={category}>
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-50">
+                  {category}
+                </h3>
+                <div className="space-y-1">
+                  {items.map((service) => (
+                    <ServiceRow key={service.name} service={service} accentColor={accentColor} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Book with this person */}
+        <div className="mt-8">
+          <a
+            href={bookingUrl}
+            className="inline-block rounded-md px-5 py-2.5 text-sm font-medium transition-opacity hover:opacity-90"
+            style={{ backgroundColor: accentColor, color: branding.backgroundColor }}
+          >
+            Book with {member.name}
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ServiceRow({ service, accentColor }: { service: SiteService; accentColor: string }) {
   return (
     <div
       className="flex items-baseline justify-between rounded-lg px-4 py-3 transition-colors"
-      style={{ backgroundColor: `${branding.primaryColor}08` }}
+      style={{ backgroundColor: `${accentColor}08` }}
     >
       <div className="min-w-0 flex-1">
         <span className="text-sm font-medium">{service.name}</span>
@@ -219,48 +289,10 @@ function ServiceRow({ service, branding }: { service: SiteService } & BrandingPr
       </div>
       <div className="ml-4 flex shrink-0 items-baseline gap-3 text-sm">
         <span className="opacity-40">{service.durationMinutes} min</span>
-        <span className="font-medium" style={{ color: branding.primaryColor }}>
+        <span className="font-medium" style={{ color: accentColor }}>
           {formatPrice(service.priceCents, service.priceDisplay)}
         </span>
       </div>
-    </div>
-  )
-}
-
-function StaffCard({ member, branding }: { member: SiteStaffMember } & BrandingProp) {
-  return (
-    <div
-      className="rounded-xl border p-6"
-      style={{ borderColor: `${branding.primaryColor}20` }}
-    >
-      <div
-        className="mb-3 flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold"
-        style={{ backgroundColor: `${branding.primaryColor}20`, color: branding.primaryColor }}
-      >
-        {member.name
-          .split(" ")
-          .map((w) => w[0])
-          .join("")
-          .slice(0, 2)}
-      </div>
-      <h3 className="font-semibold">{member.name}</h3>
-      <p className="text-sm opacity-50">{member.role}</p>
-      {member.bio && (
-        <p className="mt-2 text-sm leading-relaxed opacity-60">{member.bio}</p>
-      )}
-      {member.specialties.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {member.specialties.map((s) => (
-            <span
-              key={s}
-              className="rounded-full px-2.5 py-0.5 text-xs"
-              style={{ backgroundColor: `${branding.primaryColor}15`, color: branding.primaryColor }}
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

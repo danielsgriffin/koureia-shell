@@ -2,7 +2,6 @@
  * SiteSpec — the full spec shape that drives tenant site rendering.
  *
  * In production, fetched from GET /api/shops/{slug}/site-spec on the main platform.
- * In local dev, uses mock data from lib/mock-specs.ts.
  */
 
 export type SiteSpec = {
@@ -28,8 +27,9 @@ export type SiteSpec = {
     displayFont: string
     bodyFont: string
   }
-  services: SiteService[]
+  /** Staff members with their services and individual hours */
   staff: SiteStaffMember[]
+  /** Composite shop hours (earliest open → latest close across all staff) */
   hours: SiteHours[]
   social: SiteSocialLink[]
   bookingUrl: string
@@ -42,7 +42,6 @@ export type SiteService = {
   durationMinutes: number
   priceCents: number
   priceDisplay?: string
-  imageUrl?: string
 }
 
 export type SiteStaffMember = {
@@ -51,6 +50,9 @@ export type SiteStaffMember = {
   bio?: string
   specialties: string[]
   imageUrl?: string
+  colorHex?: string
+  services: SiteService[]
+  hours: SiteHours[]
 }
 
 export type SiteHours = {
