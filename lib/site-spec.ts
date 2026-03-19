@@ -10,11 +10,20 @@ export type SiteSpec = {
     slug: string
     domain: string
     tagline?: string
+    subTagline?: string
     description?: string
+    originStory?: string
+    brandPhilosophy?: string
     address?: string
     phone?: string
     email?: string
     timezone: string
+    cancellationPolicy?: string
+    birthdayPromo?: string
+    giftCardUrl?: string
+    googleReviewsUrl?: string
+    mapCoordinates?: { lat: number; lng: number }
+    paymentMethods: string[]
   }
   branding: {
     primaryColor: string
@@ -27,6 +36,12 @@ export type SiteSpec = {
     displayFont: string
     bodyFont: string
   }
+  featuredService?: {
+    name: string
+    headline: string
+    description: string
+  }
+  testimonials: { name: string; text: string }[]
   /** Staff members with their services and individual hours */
   staff: SiteStaffMember[]
   /** Composite shop hours (earliest open → latest close across all staff) */
@@ -63,6 +78,6 @@ export type SiteHours = {
 }
 
 export type SiteSocialLink = {
-  platform: string // "instagram", "facebook", "tiktok", etc.
+  platform: string // "instagram", "facebook", "yelp", etc.
   url: string
 }
