@@ -2,13 +2,15 @@ import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { resolveTenant, resolveSiteSpec } from "@/lib/tenant"
 import { SiteRenderer } from "@/components/site-renderer"
+import { BookingPage } from "@/components/site/booking-page"
+import { getTheme } from "@/components/site/theme"
 
 type Props = {
   params: Promise<{ domain: string; slug?: string[] }>
 }
 
 export default async function TenantPage({ params }: Props) {
-  const { domain } = await params
+  const { domain, slug } = await params
   const headersList = await headers()
 
   // The domain comes from the middleware rewrite path param,
@@ -36,6 +38,17 @@ export default async function TenantPage({ params }: Props) {
   if (!spec) {
     // Spec not available yet — show minimal branded page
     return <PlaceholderPage tenant={tenant} />
+  }
+
+  // Route by slug — exact match only
+  if (slug?.length === 1 && slug[0] === "book") {
+    const theme = getTheme(spec.branding)
+    return <BookingPage spec={spec} theme={theme} />
+  }
+
+  // Unknown slug → 404, root → landing page
+  if (slug && slug.length > 0) {
+    notFound()
   }
 
   return <SiteRenderer spec={spec} />
