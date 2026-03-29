@@ -12,9 +12,45 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
   const [email, setEmail] = useState("")
   const [smsConsent, setSmsConsent] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const staffMember = spec.staff.find((s) => s.name === selectedStaff)
   const services = staffMember?.services ?? []
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_KOUREIA_API_URL || "https://koureia.com"
+      const res = await fetch(`${apiBase}/api/booking/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shopSlug: spec.shop.slug,
+          name,
+          phone,
+          email: email || undefined,
+          staffName: selectedStaff || undefined,
+          serviceName: selectedService || undefined,
+          smsConsent,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || "Something went wrong. Please try again.")
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (submitted) {
     return (
@@ -40,6 +76,12 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
     )
   }
 
+  const inputStyle = {
+    backgroundColor: `${theme.textColor}08`,
+    borderColor: `${theme.textColor}20`,
+    color: theme.textColor,
+  }
+
   return (
     <div className="min-h-dvh" style={{ backgroundColor: theme.backgroundColor, color: theme.textColor, fontFamily: theme.bodyFont }}>
       {/* Header */}
@@ -61,19 +103,20 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
           Book an Appointment
         </h1>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            setSubmitted(true)
-          }}
-          className="space-y-6"
-        >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
           {/* Staff selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium" style={{ opacity: 0.8 }}>
+            <label htmlFor="book-staff" className="block text-sm font-medium" style={{ opacity: 0.8 }}>
               Who would you like to see?
             </label>
             <select
+              id="book-staff"
               value={selectedStaff}
               onChange={(e) => {
                 setSelectedStaff(e.target.value)
@@ -81,11 +124,7 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
               }}
               required
               className="w-full rounded-lg px-3 py-2.5 text-sm border"
-              style={{
-                backgroundColor: `${theme.textColor}08`,
-                borderColor: `${theme.textColor}20`,
-                color: theme.textColor,
-              }}
+              style={inputStyle}
             >
               <option value="">Select a team member</option>
               {spec.staff.map((s) => (
@@ -99,19 +138,16 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
           {/* Service selection */}
           {selectedStaff && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium" style={{ opacity: 0.8 }}>
+              <label htmlFor="book-service" className="block text-sm font-medium" style={{ opacity: 0.8 }}>
                 Service
               </label>
               <select
+                id="book-service"
                 value={selectedService}
                 onChange={(e) => setSelectedService(e.target.value)}
                 required
                 className="w-full rounded-lg px-3 py-2.5 text-sm border"
-                style={{
-                  backgroundColor: `${theme.textColor}08`,
-                  borderColor: `${theme.textColor}20`,
-                  color: theme.textColor,
-                }}
+                style={inputStyle}
               >
                 <option value="">Select a service</option>
                 {services.map((svc) => (
@@ -131,58 +167,49 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
             </h2>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium" style={{ opacity: 0.8 }}>
+              <label htmlFor="book-name" className="block text-sm font-medium" style={{ opacity: 0.8 }}>
                 Name
               </label>
               <input
+                id="book-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Your full name"
                 className="w-full rounded-lg px-3 py-2.5 text-sm border"
-                style={{
-                  backgroundColor: `${theme.textColor}08`,
-                  borderColor: `${theme.textColor}20`,
-                  color: theme.textColor,
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium" style={{ opacity: 0.8 }}>
+              <label htmlFor="book-phone" className="block text-sm font-medium" style={{ opacity: 0.8 }}>
                 Phone Number
               </label>
               <input
+                id="book-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 placeholder="(555) 123-4567"
                 className="w-full rounded-lg px-3 py-2.5 text-sm border"
-                style={{
-                  backgroundColor: `${theme.textColor}08`,
-                  borderColor: `${theme.textColor}20`,
-                  color: theme.textColor,
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium" style={{ opacity: 0.8 }}>
+              <label htmlFor="book-email" className="block text-sm font-medium" style={{ opacity: 0.8 }}>
                 Email <span style={{ opacity: 0.5 }}>(optional)</span>
               </label>
               <input
+                id="book-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full rounded-lg px-3 py-2.5 text-sm border"
-                style={{
-                  backgroundColor: `${theme.textColor}08`,
-                  borderColor: `${theme.textColor}20`,
-                  color: theme.textColor,
-                }}
+                style={inputStyle}
               />
             </div>
           </div>
@@ -232,10 +259,11 @@ export function BookingPage({ spec, theme }: { spec: SiteSpec; theme: Theme }) {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full rounded-lg py-3 text-sm font-semibold transition-opacity hover:opacity-90"
+            disabled={submitting}
+            className="w-full rounded-lg py-3 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: theme.primaryColor, color: theme.backgroundColor }}
           >
-            Request Appointment
+            {submitting ? "Sending…" : "Request Appointment"}
           </button>
 
           <p className="text-xs text-center" style={{ opacity: 0.4 }}>

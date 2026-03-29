@@ -40,12 +40,15 @@ export default async function TenantPage({ params }: Props) {
     return <PlaceholderPage tenant={tenant} />
   }
 
-  // Route by slug
-  const page = slug?.[0]
-
-  if (page === "book") {
+  // Route by slug — exact match only
+  if (slug?.length === 1 && slug[0] === "book") {
     const theme = getTheme(spec.branding)
     return <BookingPage spec={spec} theme={theme} />
+  }
+
+  // Unknown slug → 404, root → landing page
+  if (slug && slug.length > 0) {
+    notFound()
   }
 
   return <SiteRenderer spec={spec} />
